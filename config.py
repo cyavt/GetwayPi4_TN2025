@@ -1,4 +1,5 @@
 import os
+
 # API Configuration
 URL_API = os.getenv("URL_API")
 
@@ -10,11 +11,14 @@ PASSWORD = os.getenv("PASSWORD")
 KEY = os.getenv("KEY")
 KEEPALIVE = os.getenv("KEEPALIVE")
 
+TIMEOUT_WAIT = os.getenv("TIMEOUT_WAIT")
+
 # MQTT Topics
-TOPICS = [
-    (f"{KEY}/devices/control", 0),
-    (f"{KEY}/config/data", 0)
-]
+TOPIC_SEND_DEVICE_STATUS = (f"{KEY}/control/device_status", 2)
+TOPIC_SEND_SENSOR_STATUS = (f"{KEY}/sensor/status", 2)
+
+TOPICS_RECEIVE_DEVICE_STATUS = (f"{KEY}/devices/control", 2)
+TOPICS_RECEIVE_CONFIG_DATA = (f"{KEY}/config/data", 2)
 
 # Default Configuration
 DEFAULT_CONFIG = {
