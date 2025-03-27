@@ -17,7 +17,8 @@ response_received = threading.Event()
 response_payload = None
 
 stop_defrost = threading.Event()
-defrost_mode = False
+defrost_active = False
+defrost_cycle_start = time.time()
 ##################### API/HTTP #####################
 def api(method, uri, data):
     url = URL_API + uri
@@ -29,12 +30,13 @@ def api(method, uri, data):
 
 ################### MQTT FUNCTION ##################
 def on_connect(client, userdata, flags, rc):
-    global connected
+    global connected, defrost_cycle_start
     if rc == 0:
         print("Đã kết nối đến MQTT Broker!")
         client.subscribe([TOPICS_RECEIVE_DEVICE_STATUS, TOPICS_RECEIVE_CONFIG_DATA])
         connected = True
         send_status()
+        defrost_cycle_start = time.time()
     else:
         connected = False
 
@@ -123,11 +125,27 @@ def mqtt_loop():
 
 ################# DEFROST MODE LOOP ###############
 def defrost_mode_loop():
-    while not stop_defrost.is_set():
-        # set_time_on_defrost = config["setting"]["defrost_time"]
-        # present_time = time.time()
-        time.sleep(60)
+    global defrost_active, defrost_cycle_start
+    initial_start_time = config["setting"]["set_time_on_defrost"]
+    initial_duration = config["setting"]["duration_defrost"]
 
+    while not stop_defrost.is_set():
+        current_start_time = config["setting"]["set_time_on_defrost"]
+        current_duration = config["setting"]["duration_defrost"]
+        
+        if current_start_time != initial_start_time or current_duration != initial_duration:
+            initial_start_time = current_start_time
+            initial_duration = current_duration
+            defrost_cycle_start = time.time()
+        
+        if (time.time() - defrost_cycle_start) > (initial_start_time * 3600):
+            defrost_active = True
+            time.sleep(initial_duration * 60)
+            defrost_active = False
+            defrost_cycle_start = time.time()
+            
+        time.sleep(60)
+        
 ################# DISPLAY MODE LOOP ###############
 def display_loop():
     while True:
@@ -155,29 +173,35 @@ try:
             # Get sensor status
             sensors = {"air_conditioner": 20.5, "storage": 18.2, "cold_battery": 15.7, "air_conditioner_energy": 2.75 }
             
-            if not defrost_mode and config["setting"]["mode"] == "ai":
+            if not defrost_active and config["setting"]["mode"] == "ai":
+                    print("AI mode")
                     device_states = send_sensor_status_and_wait(sensors)
                     if device_states:
                         config["control"] = device_states
                         send_status()
                     else:
                         print("No response from device of AI mode, AGAIN...")
-            elif not defrost_mode and config["setting"]["mode"] == "auto":
+            elif not defrost_active and config["setting"]["mode"] == "auto":
+                    print("Auto mode")
                     device_states = AUTO_MODE(config["setting"], sensors)
                     if device_states:
                         config["control"] = device_states
                         send_status()
-            elif not defrost_mode and config["setting"]["mode"] == "manual":
+            elif not defrost_active and config["setting"]["mode"] == "manual":
                     # Nothing to do
                     print("Manual mode")
-            elif config["setting"]["mode"] == "off":
-                    defrost_mode = False
+            elif not defrost_active and config["setting"]["mode"] == "off":
+                    print("Off mode")
+                    defrost_active = False
                     stop_defrost.set()
-                    device_states = {"air_conditioner": False, "storage": False, "cold_battery": False, "air_conditioner_energy": False}
+                    device_states = {"compressor": 0,"fan": 0,"defrost": 0}
                     config["control"] = device_states
                     send_status()
             else:
                 print("Defrost mode")
+                device_states = {"compressor": 0,"fan": 0,"defrost": 1}
+                config["control"] = device_states
+                send_status()
                 
         except Exception as e:
             pass

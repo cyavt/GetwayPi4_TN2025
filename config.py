@@ -37,8 +37,8 @@ DEFAULT_CONFIG = {
         "time_on_charging_min": 0,  # min
         "time_off_charging_hour": 7,  # thời điểm bắt đầu chế độ Tự động ưu tiên xả PCM để tiết kiệm điện 
         "time_off_charging_min": 0,  # min
-        "def_cycle": 6,  # Thời gian lặp lại chu kỳ xả đá (giờ)
-        "def_time": 15,  # Thời gian xả đá (phút)
+        "set_time_on_defrost": 6,  # Thời gian lặp lại chu kỳ xả đá (giờ)
+        "duration_defrost": 15,  # Thời gian xả đá (phút)
         "def_drip": 60,  # Thời gian nhỏ giọt sau xả đá (Bắt buộc lớn hơn 1s - chống nhiễu) (giây)
         "def_delay": 10,  # Thời gian trễ trước khi vào xả đá (Bắt buộc lớn hơn 1s - chống nhiễu) (giây)
         "tempOffDef": 10,  # Nhiệt độ dừng xả đá (C degree)
