@@ -77,10 +77,11 @@ def on_message(client, userdata, msg):
             response_received.set()
 
     except json.JSONDecodeError:
-        print("Lỗi: Tin nhắn không đúng định dạng JSON")
+        print("E: Format JSON")
     except Exception as e:
-        print(f"Lỗi xử lý lệnh: {e}")
+        print(f"E: {e}")
 
+################ SYSTEM FUNCTION ################
 def send_status():
     global config
     if connected:
@@ -103,16 +104,17 @@ def send_sensor_status_and_wait(sensor_data):
 
 def control_device(control):
     print(f"control: {control}")
-    # if control["compressor"]:
-    #     print("Compressor State")
-    # if control["fan"]:
-    #     print("Fan State")
 
-################### CALLBACK ####################
-client.username_pw_set(USERNAME, PASSWORD)
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
+################### INIT ####################
+def init():
+    global config
+    client.username_pw_set(USERNAME, PASSWORD)
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+    client.on_message = on_message
+    # config_from_server = api("GET", "/config", None)
+    # if config_from_server: config = config_from_server
+    # else: exit()
 
 ################### MQTT LOOP ####################
 def mqtt_loop():
@@ -124,26 +126,17 @@ def defrost_mode_loop():
     while not stop_defrost.is_set():
         # set_time_on_defrost = config["setting"]["defrost_time"]
         # present_time = time.time()
-        # if(present_time - start_time > set_time_on_defrost * 60):
-        #     Tắt defrost
-        #     config["control"]["compressor"] = False
-        #     config["control"]["fan"] = False
-        #     config["control"]["defrost"] = True
-        # send_status()
-        # Đợi 1 phút
         time.sleep(60)
 
 ################# DISPLAY MODE LOOP ###############
-def display_mode_loop():
+def display_loop():
     while True:
-        print(config)
+        # print(config)
         time.sleep(5)
 
 #################### MAIN LOOP ####################
 try:
-    # config_from_server = api("GET", "/config", None)
-    # if config_from_server: config = config_from_server
-    # else: exit()
+    init()
 
     mqtt_thread = threading.Thread(target=mqtt_loop)
     mqtt_thread.daemon = True
@@ -153,13 +146,13 @@ try:
     defrost_thread.daemon = True
     defrost_thread.start()
 
-    display_thread = threading.Thread(target=display_mode_loop)
+    display_thread = threading.Thread(target=display_loop)
     display_thread.daemon = True
     display_thread.start()
 
     while True:
         try:
-            # Lấy dữ liệu cảm biến từ cảm biến
+            # Get sensor status
             sensors = {"air_conditioner": 20.5, "storage": 18.2, "cold_battery": 15.7, "air_conditioner_energy": 2.75 }
             
             if not defrost_mode and config["setting"]["mode"] == "ai":

@@ -9,12 +9,12 @@ URL_API = os.getenv("URL_API")
 
 # MQTT Configuration
 BROKER_ADDRESS = os.getenv("BROKER_ADDRESS")
-PORT = int(os.getenv("PORT", "1883"))  # Default to 1883 if not set
+PORT = int(os.getenv("PORT"))
 USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")
 KEY = os.getenv("KEY")
-KEEPALIVE = int(os.getenv("KEEPALIVE", "60"))  # Default to 60 if not set
-TIMEOUT_WAIT = int(os.getenv("TIMEOUT_WAIT", "60"))  # Default to 30 seconds if not set
+KEEPALIVE = int(os.getenv("KEEPALIVE"))
+TIMEOUT_WAIT = int(os.getenv("TIMEOUT_WAIT"))
 
 # MQTT Topics
 TOPIC_SEND_DEVICE_STATUS = (f"{KEY}/control/device-status", 2)
@@ -45,8 +45,8 @@ DEFAULT_CONFIG = {
         "timeoutSerial": 5, #Thời gian đọc cảm biến
     },
     "control": {
-        "compressor": 1,
-        "fan": 1,
+        "compressor": 0,
+        "fan": 0,
         "defrost": 0
     }
 } 
