@@ -45,8 +45,8 @@ DEFAULT_CONFIG = {
         "timeoutSerial": 5, #Thời gian đọc cảm biến
     },
     "control": {
-        "compressor": 0,
-        "fan": 0,
+        "compressor": 1,
+        "fan": 1,
         "defrost": 0
     }
 } 

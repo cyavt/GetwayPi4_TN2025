@@ -16,6 +16,8 @@ connected = False
 response_received = threading.Event()
 response_payload = None
 
+stop_defrost = threading.Event()
+defrost_mode = False
 ##################### API/HTTP #####################
 def api(method, uri, data):
     url = URL_API + uri
@@ -65,7 +67,6 @@ def on_message(client, userdata, msg):
                 response_received.set()
         elif topic == TOPICS_RECEIVE_DEVICE_STATUS[0] and config["setting"]["mode"] == "manual":
             config["control"] = json.loads(payload)
-            print(f"Control: {config['control']}")
             send_status()
             # Break wait AI mode
             response_received.set()
@@ -120,9 +121,23 @@ def mqtt_loop():
 
 ################# DEFROST MODE LOOP ###############
 def defrost_mode_loop():
-    global config
+    while not stop_defrost.is_set():
+        # set_time_on_defrost = config["setting"]["defrost_time"]
+        # present_time = time.time()
+        # if(present_time - start_time > set_time_on_defrost * 60):
+        #     Tắt defrost
+        #     config["control"]["compressor"] = False
+        #     config["control"]["fan"] = False
+        #     config["control"]["defrost"] = True
+        # send_status()
+        # Đợi 1 phút
+        time.sleep(60)
+
+################# DISPLAY MODE LOOP ###############
+def display_mode_loop():
     while True:
-          time.sleep(5)
+        print(config)
+        time.sleep(5)
 
 #################### MAIN LOOP ####################
 try:
@@ -138,27 +153,33 @@ try:
     defrost_thread.daemon = True
     defrost_thread.start()
 
+    display_thread = threading.Thread(target=display_mode_loop)
+    display_thread.daemon = True
+    display_thread.start()
+
     while True:
         try:
             # Lấy dữ liệu cảm biến từ cảm biến
             sensors = {"air_conditioner": 20.5, "storage": 18.2, "cold_battery": 15.7, "air_conditioner_energy": 2.75 }
             
-            if config["setting"]["mode"] == "ai":
+            if not defrost_mode and config["setting"]["mode"] == "ai":
                     device_states = send_sensor_status_and_wait(sensors)
                     if device_states:
                         config["control"] = device_states
                         send_status()
                     else:
                         print("No response from device of AI mode, AGAIN...")
-            elif config["setting"]["mode"] == "auto":
+            elif not defrost_mode and config["setting"]["mode"] == "auto":
                     device_states = AUTO_MODE(config["setting"], sensors)
                     if device_states:
                         config["control"] = device_states
                         send_status()
-            elif config["setting"]["mode"] == "manual":
+            elif not defrost_mode and config["setting"]["mode"] == "manual":
                     # Nothing to do
                     print("Manual mode")
             elif config["setting"]["mode"] == "off":
+                    defrost_mode = False
+                    stop_defrost.set()
                     device_states = {"air_conditioner": False, "storage": False, "cold_battery": False, "air_conditioner_energy": False}
                     config["control"] = device_states
                     send_status()

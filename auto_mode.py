@@ -10,8 +10,8 @@ def AUTO_MODE(setting, sensors):
     """
     try:
         # Lấy giá trị từ config
-        temp_on = config["setting"]["tempOnSetpoint"]
-        temp_off = config["setting"]["tempOffSetpoint"]
+        temp_on = setting["tempOnSetpoint"]
+        temp_off = setting["tempOffSetpoint"]
         
         # Lấy giá trị từ cảm biến
         temp_ac = sensors["air_conditioner"]
@@ -36,7 +36,6 @@ def AUTO_MODE(setting, sensors):
             }
             
     except Exception as e:
-        logger.error(f"Lỗi trong chế độ tự động: {e}")
         return {
             "compressor": 0,
             "fan": 0
