@@ -1,4 +1,4 @@
-# 26/03/2025
+###################### 26/03/2025 ###################
 import paho.mqtt.client as mqtt
 import json
 import time
@@ -57,12 +57,22 @@ def on_message(client, userdata, msg):
         topic = msg.topic
         payload = msg.payload.decode()
         if topic == TOPICS_RECEIVE_CONFIG_DATA[0]:
-            config["setting"] = json.loads(payload)
+            isMode = json.loads(payload).get("mode")
+            if isMode:
+                config["setting"] = json.loads(payload)
+                print(f"Config: {config['setting']}")
+                # Break wait AI mode
+                response_received.set()
         elif topic == TOPICS_RECEIVE_DEVICE_STATUS[0] and config["setting"]["mode"] == "manual":
             config["control"] = json.loads(payload)
+            print(f"Control: {config['control']}")
             send_status()
+            # Break wait AI mode
+            response_received.set()
         elif topic == TOPICS_RECEIVE_DEVICE_STATUS[0] and config["setting"]["mode"] == "ai":
             response_payload = json.loads(payload)
+            print(f"Response Payload: {response_payload}")
+            # Break wait AI mode
             response_received.set()
 
     except json.JSONDecodeError:
@@ -91,12 +101,11 @@ def send_sensor_status_and_wait(sensor_data):
         return None
 
 def control_device(control):
-    if control["air_conditioner"]:
-        # điều khiển thiết bị lạnh
-        pass
-    if control["storage"]:
-        # điều khiển thiết bị lạnh
-        pass
+    print(f"control: {control}")
+    # if control["compressor"]:
+    #     print("Compressor State")
+    # if control["fan"]:
+    #     print("Fan State")
 
 ################### CALLBACK ####################
 client.username_pw_set(USERNAME, PASSWORD)
@@ -113,13 +122,13 @@ def mqtt_loop():
 def defrost_mode_loop():
     global config
     while True:
-          time.sleep(1)
+          time.sleep(5)
 
 #################### MAIN LOOP ####################
 try:
-    config_from_server = api("GET", "/config", None)
-    if config_from_server: config = config_from_server
-    else: exit()
+    # config_from_server = api("GET", "/config", None)
+    # if config_from_server: config = config_from_server
+    # else: exit()
 
     mqtt_thread = threading.Thread(target=mqtt_loop)
     mqtt_thread.daemon = True
@@ -139,15 +148,22 @@ try:
                     if device_states:
                         config["control"] = device_states
                         send_status()
+                    else:
+                        print("No response from device of AI mode, AGAIN...")
             elif config["setting"]["mode"] == "auto":
                     device_states = AUTO_MODE(config["setting"], sensors)
                     if device_states:
                         config["control"] = device_states
                         send_status()
+            elif config["setting"]["mode"] == "manual":
+                    # Nothing to do
+                    print("Manual mode")
             elif config["setting"]["mode"] == "off":
                     device_states = {"air_conditioner": False, "storage": False, "cold_battery": False, "air_conditioner_energy": False}
                     config["control"] = device_states
                     send_status()
+            else:
+                print("Defrost mode")
                 
         except Exception as e:
             pass
